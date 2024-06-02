@@ -29,42 +29,82 @@ LCDJunoG lcdJunoG_cs2;
 
 #define ZOOM_X 2
 #define ZOOM_Y 3
+#define ORIGINAL_LCD_WIDTH 240
+#define ORIGINAL_LCD_HEIGHT 96
+#define Y_PACKED_BYTES_LENGTH 12 // 96/8 = 12. Original LCD has 96 pixels in Y direction, but 8 pixels are packed into 1 byte.
+#define ORIGINAL_LCD_PART_X_MAX_ADDRESS 123 // max X address for CS1 and CS2. Last 3 pixels are not used.
+#define RAW_DATA_BUFFER_LENGTH 1476 // (ORIGINAL_LCD_PART_X_MAX_ADDRESS * Y_PACKED_BYTES_LENGTH)
+#define CS2_X_OFFSET 120 // X offset for CS2. CS2 starts at X address 120.
 
 uint tft_xoffset = 0;
 uint tft_yoffset = 0;
 
-volatile uint16_t buffer_cs1[12*123];
-volatile uint16_t buffer_cs2[12*123];
-volatile uint8_t back_buffer[240][96/8]; /* max X address register for CS1 and CS2 times max Y register */
-volatile uint16_t pixel_x[240]; /* X location (pre-calculated) of actual pixel on new screen */
-volatile uint16_t pixel_y[96]; /* Y location (pre-calculated) of actual pixel on new screen */
+/* 
+  buffer_cs1[i]: raw data buffer sent from JUNO-G.
+
+    bits:
+    FEDCBA98 76543210
+    ??????s? vvvvvvvv
+    s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin data (see JUNO_RS in platformio.ini)
+    v = value bits (8 bits: values 0 up to and including 255). y-axis values for 8 pixels packed into 1 byte.
+*/
+volatile uint16_t buffer_cs1[RAW_DATA_BUFFER_LENGTH];
+
+/* 
+  buffer_cs2[i]: raw data buffer sent from JUNO-G.
+
+    bits:
+    FEDCBA98 76543210
+    ??????s? vvvvvvvv
+    s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin data (see JUNO_RS in platformio.ini)
+    v = value bits (8 bits: values 0 up to and including 255). y-axis values for 8 pixels packed into 1 byte.
+*/
+volatile uint16_t buffer_cs2[RAW_DATA_BUFFER_LENGTH];
+
+// Extracts the value bits from the buffer_cs1 and buffer_cs2
+#define VALUE_BITS(value) (value & 0xff)
+// Extracts the RS bit from the buffer_cs1 and buffer_cs2
+// TODO: still includes the magic number 9. Replace with a constant.
+#define RS_BIT(value) ((value >> 9) & 1)
+
+volatile uint8_t back_buffer[ORIGINAL_LCD_WIDTH][Y_PACKED_BYTES_LENGTH]; /* max X address register for CS1 and CS2 times max Y register */
+volatile uint16_t pixel_x[ORIGINAL_LCD_WIDTH]; /* X location (pre-calculated) of actual pixel on new screen */
+volatile uint16_t pixel_y[ORIGINAL_LCD_HEIGHT]; /* Y location (pre-calculated) of actual pixel on new screen */
 
 uint32_t tft_bgcolor = TFT_ORANGE;
 uint32_t tft_bgcolor_prev = TFT_BLACK;
 
-void drawPixels(uint8_t val, uint8_t xx, uint8_t yy) {
-  int16_t x = pixel_x[yy];
-  int8_t y = xx * 8;
+/*
+  Draws a packed_pixels byte on the TFT screen at x,y_index
+
+  arguments:
+  - packed_pixels: 8 pixels packed into 1 byte. MSB is the top pixel, LSB is the bottom pixel.
+  - y_index: the y index of the pixel. packed_pixels is drawn at y_index*8 up to and including y_index*8+7, thus 0 <= y_index < 12 (= Y_PACKED_BYTES_LENGTH).
+  - x: the x address of the pixel
+ */
+void drawPixels(uint8_t packed_pixels, uint8_t y_index, uint8_t x) {
+  int16_t real_x = pixel_x[x];
+  int8_t y = y_index * 8;
   //for (int b = 0; b < 8; b++ ) {
-    //if (((val >> b) & 0x1) == 1) tft.drawPixel(x, pixel_y[y+b], TFT_BLACK); else tft.drawPixel(x, pixel_y[y+b], TFT_WHITE);
-    //unrolled:
-    if ((val & 0x1) == 0x1)   tft.drawPixel(x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(x, pixel_y[y++], tft_bgcolor);
-    if ((val & 0x2) == 0x2)   tft.drawPixel(x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(x, pixel_y[y++], tft_bgcolor);
-    if ((val & 0x4) == 0x4)   tft.drawPixel(x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(x, pixel_y[y++], tft_bgcolor);
-    if ((val & 0x8) == 0x8)   tft.drawPixel(x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(x, pixel_y[y++], tft_bgcolor);
-    if ((val & 0x10) == 0x10) tft.drawPixel(x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(x, pixel_y[y++], tft_bgcolor);
-    if ((val & 0x20) == 0x20) tft.drawPixel(x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(x, pixel_y[y++], tft_bgcolor);
-    if ((val & 0x40) == 0x40) tft.drawPixel(x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(x, pixel_y[y++], tft_bgcolor);
-    if ((val & 0x80) == 0x80) tft.drawPixel(x, pixel_y[y  ], TFT_BLACK); else tft.drawPixel(x, pixel_y[y  ], tft_bgcolor);
+  //  if (((packed_pixels >> b) & 0x1) == 1) tft.drawPixel(real_x, pixel_y[y+b], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y+b], TFT_WHITE);
   //}
+  //unrolled loop for performance:
+  if ((packed_pixels & 0x1) == 0x1)   tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
+  if ((packed_pixels & 0x2) == 0x2)   tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
+  if ((packed_pixels & 0x4) == 0x4)   tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
+  if ((packed_pixels & 0x8) == 0x8)   tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
+  if ((packed_pixels & 0x10) == 0x10) tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
+  if ((packed_pixels & 0x20) == 0x20) tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
+  if ((packed_pixels & 0x40) == 0x40) tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
+  if ((packed_pixels & 0x80) == 0x80) tft.drawPixel(real_x, pixel_y[y  ], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y  ], tft_bgcolor);
 }
 
 void fillscreenInterlaced(uint32_t bgcolor) {
   tft.startWrite();
   tft.fillScreen(TFT_BLACK);
-  for (uint y = 0; y < 240; y++) {
-    for (uint x = 0; x < 12; x++) {
-        drawPixels(back_buffer[y][x], x, y);
+  for (uint x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
+    for (uint y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
+        drawPixels(back_buffer[x][y], x, y);
     }
   }
   tft.endWrite();
@@ -113,12 +153,11 @@ void setup()
   //Serial.begin(115200);
   // delay(2000);
   //Serial.setTimeout(50);
-  Serial.println("juno g lcd emulator");
+  // Serial.println("juno g lcd emulator");
   tft.init();
-  //tft.setRotation(2);
   tft.setRotation(1);
-  tft_xoffset = (tft.width() - 240 * ZOOM_X) / 2 - ((tft.width() - 240 * ZOOM_X) / 2 % ZOOM_X);
-  tft_yoffset = (tft.height() - 96 * ZOOM_Y) / 2 - ((tft.height() - 96 * ZOOM_Y) / 2 % ZOOM_Y);
+  tft_xoffset = (tft.width() - ORIGINAL_LCD_WIDTH * ZOOM_X) / 2 - ((tft.width() - ORIGINAL_LCD_WIDTH * ZOOM_X) / 2 % ZOOM_X);
+  tft_yoffset = (tft.height() - ORIGINAL_LCD_HEIGHT * ZOOM_Y) / 2 - ((tft.height() - ORIGINAL_LCD_HEIGHT * ZOOM_Y) / 2 % ZOOM_Y);
 
   pinMode( JUNO_BACKLIGHT, OUTPUT );
 #ifdef MODE_BRIGHTNESS
@@ -135,16 +174,16 @@ void setup()
 #endif
 
   {  //precalculate new display pixel indices
-    for (uint8_t x = 0; x < 240; x++) {
+    for (uint8_t x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
       pixel_x[x] = tft_xoffset + x * ZOOM_X;
     }
-    for (uint8_t y = 0; y < 96; y++) {
+    for (uint8_t y = 0; y < ORIGINAL_LCD_HEIGHT; y++) {
       pixel_y[y] = tft_yoffset + y * ZOOM_Y;
     }
   }
   { //initialize back buffer
-    for (uint8_t x = 0; x < 239; x++) {
-      for (uint8_t y = 0; y < 96/8; y++) {
+    for (uint8_t x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
+      for (uint8_t y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
         back_buffer[x][y] = 0;
       }
     }
@@ -163,7 +202,7 @@ void setup()
   tft.setTextSize(2);
   
   tft.setTextDatum(TC_DATUM);
-  tft.drawString("JunoG LCD replacement V2.1.2", tft.width() /2, tft.height() / 2 - 20 );
+  tft.drawString("JunoG LCD replacement V2.1.3", tft.width() /2, tft.height() / 2 - 20 );
   //tft.drawString("CPU_FREQ:" + String(rp2040.f_cpu()), tft.width() /2, tft.height() / 2 + 10 );
   delay(500);
   fillscreenInterlaced(tft_bgcolor);
@@ -177,8 +216,8 @@ void setup()
   tft.setTextSize(1);
   
   // Setup our DMX Input to read on GPIO 0, from channel 1 to 3
-  lcdJunoG_cs1.begin(2, pio0, 1);
-  lcdJunoG_cs2.begin(2, pio1, 2);
+  lcdJunoG_cs1.begin(JUNO_D0, pio0, 1);
+  lcdJunoG_cs2.begin(JUNO_D0, pio1, 2);
   lcdJunoG_cs1.read_async(buffer_cs1);
   lcdJunoG_cs2.read_async(buffer_cs2);
 
@@ -189,7 +228,7 @@ void setup()
 volatile uint8_t x_cs1 = 0; //X address register for CS1: 4 bit: values 0 up and to including 15: actually max. 12 as 12*8 = 96
 volatile uint8_t x_cs2 = 0; //X address register for CS2: 4 bit: values 0 up and to including 15: actually max. 12 as 12*8 = 96
 volatile uint8_t y_cs1 = 0; //Y address counter for CS1: 7 bit: values 0 up and to including 127: actually max. 120
-volatile uint8_t y_cs2 = 120; //Y address counter for CS2: 7 bit: values 0 up and to including 127: actually max. 120. Here it is set, and later reset to 120, to avoid having to add an offset of 120 all the time
+volatile uint8_t y_cs2 = CS2_X_OFFSET; //Y address counter for CS2: 7 bit: values 0 up and to including 127: actually max. 120. Here it is set, and later reset to 120, to avoid having to add an offset of 120 all the time
 
 bool led_on = false;
 long latest_packet_timestamp_cs1 = 0;
@@ -228,30 +267,24 @@ void loop()
   latest_packet_timestamp_cs1 = lcdJunoG_cs1.latest_packet_timestamp();
   latest_packet_timestamp_cs2 = lcdJunoG_cs2.latest_packet_timestamp();
   tft.startWrite();
-  for (uint i = 0; i < 123*12; i++)  
+  for (uint i = 0; i < RAW_DATA_BUFFER_LENGTH; i++)  
   {
     { //CS 1
-      /* 
-        buffer_cs1[i] 
-          bits: 
-          ??????s? vvvvvvvv
-          s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin GP6         
-          v = value bits (8 bits: values 0 up to and including 255)
-      */
-      uint8_t val = buffer_cs1[i] & 0xff /* 00000000 11111111*/;
-      uint8_t rs = (buffer_cs1[i] /*000000s0 00000000*/ >> 9) /*00000000 0000000s*/ & 1; 
+      uint8_t val = VALUE_BITS(buffer_cs1[i]);
+      uint8_t rs = RS_BIT(buffer_cs1[i]);
       if (rs == 0) { //INSTRUCTION REGISTER
 #ifdef SHOWCMD
           showcmd( cs, val );
 #endif
-        if ((val & 0xf0 /*11110000*/) == 0xb0 /*1011000*/) { //Sets the X address at the X address register
+      // TODO: research what this instruction does.
+      if ((val & 0xf0 /*11110000*/) == 0xb0 /*1011000*/) { //Sets the X address at the X address register
           x_cs1 = val & 0x0f /*00001111*/;
           y_cs1 = 0;
         }
       } else if (rs == 1) { //DATA REGISTER
         //writes data on JUNO_D0 to JUNO_D7 pins into display data RAM.
-        if (y_cs1 < 120) {  // avoid overflow
-          if (back_buffer[y_cs1][x_cs1] != val) {
+        if (y_cs1 < CS2_X_OFFSET) {  // avoid overflow
+          if (back_buffer[y_cs1][x_cs1] != val) { // only draw if value has changed for performance
             back_buffer[y_cs1][x_cs1] = val;
             drawPixels(val, x_cs1, y_cs1);
           }
@@ -260,26 +293,19 @@ void loop()
       }    
     }
     { //CS 2
-      /* 
-        buffer_cs2[i] 
-          bits: 
-          ??????s? vvvvvvvv
-          s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin GP6         
-          v = value bits (8 bits: values 0 up to and including 255)
-      */
-      uint8_t val = buffer_cs2[i] & 0xff;
-      uint8_t rs = (buffer_cs2[i] >> 9) & 1;
+      uint8_t val = VALUE_BITS(buffer_cs2[i]);
+      uint8_t rs = RS_BIT(buffer_cs2[i]);
       if (rs == 0) { //INSTRUCTION REGISTER
 #ifdef SHOWCMD
         showcmd( cs, val );
 #endif
         if ((val & 0xf0 /*11110000*/) == 0xb0 /*1011000*/) { //Sets the X address at the X address register
           x_cs2 = val & 0x0f /*00001111*/;
-          y_cs2 = 120; // 120 is left most pixel of the right hand part
+          y_cs2 = CS2_X_OFFSET; // 120 is left most pixel of the right hand part
         }
       } else if (rs == 1) { //DATA REGISTER
         //writes data on JUNO_D0 to JUNO_D7 pins into display data RAM.
-        if (y_cs2 >= 120 && y_cs2 < 240) {  // avoid overflow  
+        if (y_cs2 >= CS2_X_OFFSET && y_cs2 < ORIGINAL_LCD_WIDTH) {  // avoid overflow  
           if (back_buffer[y_cs2][x_cs2] != val) {
             back_buffer[y_cs2][x_cs2] = val;
             drawPixels(val, x_cs2, y_cs2);
@@ -292,5 +318,5 @@ void loop()
   tft.endWrite();
   // Blink the LED to indicate that a packet was received
   if (!led_on) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
-  led_on != led_on;
+  led_on = !led_on;
 }

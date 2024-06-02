@@ -13,21 +13,25 @@
 // ------------ //
 
 #define LCDJunoG_cs1_wrap_target 0
+// TODO: it might be changed. Check it and LCDJunoG_cs1_program_instructions.
 #define LCDJunoG_cs1_wrap 4
 
 static const uint16_t LCDJunoG_cs1_program_instructions[] = {
             //     .wrap_target
-    0x202a, //  0: wait   0 pin, 10                  
-    0x20aa, //  1: wait   1 pin, 10                  
-    0x400a, //  2: in     pins, 10                   
-    0x4076, //  3: in     null, 22                   
-    0x8020, //  4: push   block                      
+    pio_encode_wait_gpio(0, JUNO_CS1), //0x202b, //  0: wait   0 pin, 10                  
+    pio_encode_wait_gpio(1, JUNO_CS1), //0x20ab, //  1: wait   1 pin, 10                  
+    // TODO: replace magic number with constant
+    pio_encode_in(pio_pins, 10), //0x400a, //  2: in     pins, 10                   
+    // TODO: replace magic number with constant
+    pio_encode_in(pio_null, 22), //0x4076, //  3: in     null, 22                   
+    pio_encode_push(false, true), //0x8020, //  4: push   block   
             //     .wrap
 };
 
 #if !PICO_NO_HARDWARE
 static const struct pio_program LCDJunoG_cs1_program = {
     .instructions = LCDJunoG_cs1_program_instructions,
+    // TODO: it might be changed. Check it and LCDJunoG_cs1_program_instructions length.
     .length = 5,
     .origin = -1,
 };
@@ -44,21 +48,25 @@ static inline pio_sm_config LCDJunoG_cs1_program_get_default_config(uint offset)
 // ------------ //
 
 #define LCDJunoG_cs2_wrap_target 0
+// TODO: it might be changed. Check it and LCDJunoG_cs1_program_instructions.
 #define LCDJunoG_cs2_wrap 4
 
 static const uint16_t LCDJunoG_cs2_program_instructions[] = {
             //     .wrap_target
-    0x202b, //  0: wait   0 pin, 11                  
-    0x20ab, //  1: wait   1 pin, 11                  
-    0x400a, //  2: in     pins, 10                   
-    0x4076, //  3: in     null, 22                   
-    0x8020, //  4: push   block                      
+    pio_encode_wait_gpio(0, JUNO_CS2), //0x202b, //  0: wait   0 pin, 11                  
+    pio_encode_wait_gpio(1, JUNO_CS2), //0x20ab, //  1: wait   1 pin, 11                  
+    // TODO: replace magic number with constant
+    pio_encode_in(pio_pins, 10), //0x400a, //  2: in     pins, 10                   
+    // TODO: replace magic number with constant
+    pio_encode_in(pio_null, 22), //0x4076, //  3: in     null, 22                   
+    pio_encode_push(false, true), //0x8020, //  4: push   block                      
             //     .wrap
 };
 
 #if !PICO_NO_HARDWARE
 static const struct pio_program LCDJunoG_cs2_program = {
     .instructions = LCDJunoG_cs2_program_instructions,
+    // TODO: it might be changed. Check it and LCDJunoG_cs2_program_instructions length.
     .length = 5,
     .origin = -1,
 };

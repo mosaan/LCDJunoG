@@ -76,22 +76,22 @@ void drawPinout(uint16_t delayTime) {
     tft.setCursor(240, tft.getCursorY(), 2); 
     tft.println("CS1 " + String(JUNO_CS1));
 
-    tft.print("D1 " + String(JUNO_D1));
+    tft.print("D1 " + String(JUNO_D0 + 1));
     tft.setCursor(240, tft.getCursorY(), 2); 
     tft.println("CS2 " + String(JUNO_CS2));
 
-    tft.print("D2 " + String(JUNO_D2));
+    tft.print("D2 " + String(JUNO_D0 + 2));
     tft.setCursor(240, tft.getCursorY(), 2); 
-    tft.println("WE  " + String(JUNO_WE));
+    // tft.println("WE  " + String(JUNO_WE));
 
-    tft.print("D3 " + String(JUNO_D3));
+    tft.print("D3 " + String(JUNO_D0 + 3));
     tft.setCursor(240, tft.getCursorY(), 2); 
-    tft.println("RS  " + String(JUNO_RS));
+    // tft.println("RS  " + String(JUNO_RS));
 
-    tft.println("D5 " + String(JUNO_D5));
-    tft.println("D4 " + String(JUNO_D4));
-    tft.println("D6 " + String(JUNO_D6));
-    tft.println("D7 " + String(JUNO_D7));
+    tft.println("D5 " + String(JUNO_D0 + 4));
+    tft.println("D4 " + String(JUNO_D0 + 5));
+    tft.println("D6 " + String(JUNO_D0 + 6));
+    tft.println("D7 " + String(JUNO_D0 + 7));
 
     delay(delayTime);
 }
