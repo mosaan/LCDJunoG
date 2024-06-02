@@ -12,7 +12,7 @@
 extern TFT_eSPI tft;
 
 void showcmd(uint8_t cs, uint8_t val) {
-    char sbuf[40];
+  char sbuf[46];
 	if ((val & 0xfe ) == 0xae) {
 		sprintf(sbuf, "cs: %d, cmd 0x%02x (on/off)", cs, val);
         Serial.println(sbuf);

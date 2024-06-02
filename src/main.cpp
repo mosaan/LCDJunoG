@@ -110,8 +110,6 @@ void fillscreenInterlaced(uint32_t bgcolor) {
   tft.endWrite();
 }
 
-bool force_refresh = false;
-
 void tft_change_brightness(uint32_t analog_read) {
 //42 54  =  50 255  0 -> 12 
   analogWrite( JUNO_BACKLIGHT, ((analog_read - 41) & 0xc) * 17 + 51 );
@@ -140,7 +138,6 @@ void tft_change_bgcolor(uint32_t analog_read) {
   if (tft_bgcolor != tft_bgcolor_prev) {
     fillscreenInterlaced(tft_bgcolor);
     tft_bgcolor_prev = tft_bgcolor;
-    force_refresh = true;
   }
 }
 
@@ -231,8 +228,8 @@ volatile uint8_t y_cs1 = 0; //Y address counter for CS1: 7 bit: values 0 up and 
 volatile uint8_t y_cs2 = CS2_X_OFFSET; //Y address counter for CS2: 7 bit: values 0 up and to including 127: actually max. 120. Here it is set, and later reset to 120, to avoid having to add an offset of 120 all the time
 
 bool led_on = false;
-long latest_packet_timestamp_cs1 = 0;
-long latest_packet_timestamp_cs2 = 0;
+unsigned long latest_packet_timestamp_cs1 = 0;
+unsigned long latest_packet_timestamp_cs2 = 0;
 
 int period = 500;
 unsigned long time_now = 0;
