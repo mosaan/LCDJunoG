@@ -1,0 +1,27 @@
+; Author: mosaan
+; SPDX-License-Identifier: BSD-3-Clause
+; 
+; Bits expander
+
+.program BitsExpander
+
+.wrap_target
+    pull block            ; 00: take pixel bits from TX FIFO into OSR
+bit_loop:
+    out x 1               ; 01: take bit from OSR into x
+    jmp !x set_black      ; 02: convert into black(0x0000) if the bit is 1, else white(0xFFFF)
+set_white:
+    set y, 3              ; 03:
+white_loop:
+    set x, 0b1111         ; 04: set white value (as 16 bits value)
+    in x, 4               ; 05:
+    jmp y-- white_loop    ; 06:
+    jmp write_and_reset   ; 07:
+set_black:
+    in null, 16           ; 08:
+write_and_reset:
+;   push iffull           ; (achieved by auto push) 08: push from ISR into RX FIFO
+    set x, 0              ; 09: clear temporal value
+    jmp !osre bit_loop    ; 10: continue until all bits consumed.
+.wrap
+
