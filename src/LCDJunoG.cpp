@@ -85,7 +85,7 @@ LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
 
     // Setup the side-set pins for the PIO state machine
     // Shift to right, autopush disabled
-    sm_config_set_in_shift(&sm_conf, true, false, 14);
+    sm_config_set_in_shift(&sm_conf, true, false, 32);
     // Deeper FIFO as we're not doing any TX
     sm_config_set_fifo_join(&sm_conf, PIO_FIFO_JOIN_RX);
 
@@ -109,7 +109,7 @@ LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
     return SUCCESS;
 }
 
-void LCDJunoG::read(volatile uint16_t *buffer)
+void LCDJunoG::read(volatile uint32_t *buffer)
 {
     if(_buf==nullptr) {
         read_async(buffer);
@@ -143,7 +143,7 @@ void lcdjunog_dma_handler() {
     }
 }
 
-void LCDJunoG::read_async(volatile uint16_t *buffer, void (*inputUpdatedCallback)(LCDJunoG*)) {
+void LCDJunoG::read_async(volatile uint32_t *buffer, void (*inputUpdatedCallback)(LCDJunoG*)) {
 
     _buf = buffer;
     if (inputUpdatedCallback!=nullptr) {
@@ -159,7 +159,7 @@ void LCDJunoG::read_async(volatile uint16_t *buffer, void (*inputUpdatedCallback
     dma_channel_config cfg = dma_channel_get_default_config(_dma_chan);
 
     // Reading from constant address, writing to incrementing byte addresses
-    channel_config_set_transfer_data_size(&cfg, DMA_SIZE_16);
+    channel_config_set_transfer_data_size(&cfg, DMA_SIZE_32);
     channel_config_set_read_increment(&cfg, false);
     channel_config_set_write_increment(&cfg, true);
 

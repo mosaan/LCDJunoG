@@ -30,7 +30,7 @@ public:
     /*
     private properties that are declared public so the interrupt handler has access
     */
-    volatile uint16_t *_buf;
+    volatile uint32_t *_buf;
     volatile PIO _pio;
     volatile uint _sm;
     volatile uint _dma_chan;
@@ -80,7 +80,7 @@ public:
         513 bytes (1 byte start code + 512 bytes frame). For ordinary
         DMX data frames, the start code should be 0x00.
     */
-    void read(volatile uint16_t *buffer);
+    void read(volatile uint32_t *buffer);
 
     /*
         Start async read process. This should only be called once.
@@ -88,7 +88,7 @@ public:
         If you want to be notified whenever a new DMX frame has been received,
         provide a callback function that will be called without arguments.
     */
-    void read_async(volatile uint16_t *buffer, void (*inputUpdatedCallback)(LCDJunoG* instance) = nullptr);
+    void read_async(volatile uint32_t *buffer, void (*inputUpdatedCallback)(LCDJunoG* instance) = nullptr);
 
     int get_capture_index();
 

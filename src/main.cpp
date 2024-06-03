@@ -31,41 +31,45 @@ LCDJunoG lcdJunoG_cs2;
 #define ZOOM_Y 3
 #define ORIGINAL_LCD_WIDTH 240
 #define ORIGINAL_LCD_HEIGHT 96
-#define Y_PACKED_BYTES_LENGTH 12 // 96/8 = 12. Original LCD has 96 pixels in Y direction, but 8 pixels are packed into 1 byte.
+const uint Y_PACKED_BYTES_LENGTH = ORIGINAL_LCD_HEIGHT / 8; // Original LCD has 96 pixels in Y direction, but 8 pixels are packed into 1 byte.
 #define ORIGINAL_LCD_PART_X_MAX_ADDRESS 123 // max X address for CS1 and CS2. Last 3 pixels are not used.
-#define RAW_DATA_BUFFER_LENGTH 1476 // (ORIGINAL_LCD_PART_X_MAX_ADDRESS * Y_PACKED_BYTES_LENGTH)
+const uint RAW_DATA_BUFFER_LENGTH = ORIGINAL_LCD_PART_X_MAX_ADDRESS * Y_PACKED_BYTES_LENGTH;
 #define CS2_X_OFFSET 120 // X offset for CS2. CS2 starts at X address 120.
 
 uint tft_xoffset = 0;
 uint tft_yoffset = 0;
 
+// R/S (INSTRUCTION/DATA REGISTER SELECTION) pin position in the buffer_cs1 and buffer_cs2.
+// The position is relative to the D0 pin.
+const uint8_t RS_PIN_RELATIVE_POSITION = (32 + JUNO_RS - JUNO_D0) % 32;
+
 /* 
   buffer_cs1[i]: raw data buffer sent from JUNO-G.
 
     bits:
-    FEDCBA98 76543210
-    ??????s? vvvvvvvv
-    s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin data (see JUNO_RS in platformio.ini)
+    FEDCBA98 76543210 FEDCBA98 76543210
+    ???????? ???????? ???????? vvvvvvvv
+    s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin data (see JUNO_RS in platformio.ini and RS_PIN_RELATIVE_POSITION)
     v = value bits (8 bits: values 0 up to and including 255). y-axis values for 8 pixels packed into 1 byte.
 */
-volatile uint16_t buffer_cs1[RAW_DATA_BUFFER_LENGTH];
+volatile uint32_t buffer_cs1[RAW_DATA_BUFFER_LENGTH];
 
 /* 
   buffer_cs2[i]: raw data buffer sent from JUNO-G.
 
     bits:
-    FEDCBA98 76543210
-    ??????s? vvvvvvvv
-    s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin data (see JUNO_RS in platformio.ini)
+    FEDCBA98 76543210 FEDCBA98 76543210
+    ???????? ???????? ???????? vvvvvvvv
+    s = R/S (INSTRUCTION/DATA REGISTER SELECTION) pin data (see JUNO_RS in platformio.ini and RS_PIN_RELATIVE_POSITION)
     v = value bits (8 bits: values 0 up to and including 255). y-axis values for 8 pixels packed into 1 byte.
 */
-volatile uint16_t buffer_cs2[RAW_DATA_BUFFER_LENGTH];
+volatile uint32_t buffer_cs2[RAW_DATA_BUFFER_LENGTH];
 
+// === buffer_cs1 and buffer_cs2 bit manipulation ===
 // Extracts the value bits from the buffer_cs1 and buffer_cs2
 #define VALUE_BITS(value) (value & 0xff)
 // Extracts the RS bit from the buffer_cs1 and buffer_cs2
-// TODO: still includes the magic number 9. Replace with a constant.
-#define RS_BIT(value) ((value >> 9) & 1)
+#define RS_BIT(value) ((value >> RS_PIN_RELATIVE_POSITION) & 1)
 
 volatile uint8_t back_buffer[ORIGINAL_LCD_WIDTH][Y_PACKED_BYTES_LENGTH]; /* max X address register for CS1 and CS2 times max Y register */
 volatile uint16_t pixel_x[ORIGINAL_LCD_WIDTH]; /* X location (pre-calculated) of actual pixel on new screen */
