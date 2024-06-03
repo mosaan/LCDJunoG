@@ -86,7 +86,7 @@ uint32_t tft_bgcolor_prev = TFT_BLACK;
   - y_index: the y index of the pixel. packed_pixels is drawn at y_index*8 up to and including y_index*8+7, thus 0 <= y_index < 12 (= Y_PACKED_BYTES_LENGTH).
   - x: the x address of the pixel
  */
-void drawPixels(uint8_t packed_pixels, uint8_t y_index, uint8_t x) {
+void drawPixels(uint8_t packed_pixels, uint8_t x, uint8_t y_index) {
   int16_t real_x = pixel_x[x];
   int8_t y = y_index * 8;
   //for (int b = 0; b < 8; b++ ) {
@@ -108,7 +108,7 @@ void fillscreenInterlaced(uint32_t bgcolor) {
   tft.fillScreen(TFT_BLACK);
   for (uint x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
     for (uint y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
-        drawPixels(back_buffer[x][y], y, x);
+        drawPixels(back_buffer[x][y], x, y);
     }
   }
   tft.endWrite();
@@ -226,10 +226,10 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
-volatile uint8_t x_cs1 = 0; //X address register for CS1: 4 bit: values 0 up and to including 15: actually max. 12 as 12*8 = 96
-volatile uint8_t x_cs2 = 0; //X address register for CS2: 4 bit: values 0 up and to including 15: actually max. 12 as 12*8 = 96
-volatile uint8_t y_cs1 = 0; //Y address counter for CS1: 7 bit: values 0 up and to including 127: actually max. 120
-volatile uint8_t y_cs2 = CS2_X_OFFSET; //Y address counter for CS2: 7 bit: values 0 up and to including 127: actually max. 120. Here it is set, and later reset to 120, to avoid having to add an offset of 120 all the time
+volatile uint8_t x_cs1 = 0; //X address counter for CS1: 7 bit: values 0 up and to including 127: actually max. 120
+volatile uint8_t x_cs2 = CS2_X_OFFSET; //X address counter for CS2: 7 bit: values 0 up and to including 127: actually max. 120. Here it is set, and later reset to 120, to avoid having to add an offset of 120 all the time
+volatile uint8_t y_cs1 = 0; //Y address register for CS1: 4 bit: values 0 up and to including 15: actually max. 12 as 12*8 = 96
+volatile uint8_t y_cs2 = 0; //Y address register for CS2: 4 bit: values 0 up and to including 15: actually max. 12 as 12*8 = 96
 
 bool led_on = false;
 unsigned long latest_packet_timestamp_cs1 = 0;
@@ -277,19 +277,20 @@ void loop()
 #ifdef SHOWCMD
           showcmd( cs, val );
 #endif
-      // TODO: research what this instruction does.
-      if ((val & 0xf0 /*11110000*/) == 0xb0 /*1011000*/) { //Sets the X address at the X address register
-          x_cs1 = val & 0x0f /*00001111*/;
-          y_cs1 = 0;
+      // JUNO-G has KS0713 like LCD controller. It has 2 display data RAMs. One for the left hand part and one for the right hand part.
+      // 
+      if ((val & 0xf0 /*11110000*/) == 0xb0 /*1011000*/) { //Sets the Y address at the Y address register
+          y_cs1 = val & 0x0f /*00001111*/;
+          x_cs1 = 0;
         }
       } else if (rs == 1) { //DATA REGISTER
         //writes data on JUNO_D0 to JUNO_D7 pins into display data RAM.
-        if (y_cs1 < CS2_X_OFFSET) {  // avoid overflow
-          if (back_buffer[y_cs1][x_cs1] != val) { // only draw if value has changed for performance
-            back_buffer[y_cs1][x_cs1] = val;
+        if (x_cs1 < CS2_X_OFFSET) {  // avoid overflow
+          if (back_buffer[x_cs1][y_cs1] != val) { // only draw if value has changed for performance
+            back_buffer[x_cs1][y_cs1] = val;
             drawPixels(val, x_cs1, y_cs1);
           }
-          y_cs1++; //After the writing instruction, Y address is increased by 1 automatically.
+          x_cs1++; //After the writing instruction, X address is increased by 1 automatically.
         }
       }    
     }
@@ -301,17 +302,17 @@ void loop()
         showcmd( cs, val );
 #endif
         if ((val & 0xf0 /*11110000*/) == 0xb0 /*1011000*/) { //Sets the X address at the X address register
-          x_cs2 = val & 0x0f /*00001111*/;
-          y_cs2 = CS2_X_OFFSET; // 120 is left most pixel of the right hand part
+          y_cs2 = val & 0x0f /*00001111*/;
+          x_cs2 = CS2_X_OFFSET; // 120 is left most pixel of the right hand part
         }
       } else if (rs == 1) { //DATA REGISTER
         //writes data on JUNO_D0 to JUNO_D7 pins into display data RAM.
-        if (y_cs2 >= CS2_X_OFFSET && y_cs2 < ORIGINAL_LCD_WIDTH) {  // avoid overflow  
-          if (back_buffer[y_cs2][x_cs2] != val) {
-            back_buffer[y_cs2][x_cs2] = val;
+        if (x_cs2 >= CS2_X_OFFSET && x_cs2 < ORIGINAL_LCD_WIDTH) {  // avoid overflow  
+          if (back_buffer[x_cs2][y_cs2] != val) {
+            back_buffer[x_cs2][y_cs2] = val;
             drawPixels(val, x_cs2, y_cs2);
           }
-          y_cs2++; //After the writing instruction, Y address is increased by 1 automatically.
+          x_cs2++; //After the writing instruction, Y address is increased by 1 automatically.
         }
       }
     }
