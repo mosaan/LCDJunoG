@@ -104,7 +104,7 @@ void fillscreenInterlaced(uint32_t bgcolor) {
   tft.fillScreen(TFT_BLACK);
   for (uint x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
     for (uint y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
-        drawPixels(back_buffer[x][y], x, y);
+        drawPixels(back_buffer[x][y], y, x);
     }
   }
   tft.endWrite();
