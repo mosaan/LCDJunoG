@@ -66,6 +66,9 @@ public:
        defaults to pio0. pio0 can run up to 3
        DMX input instances. If you really need more, you can
        run 3 more on pio1  
+
+       Param: cs
+       The chip number (1 or 2).
     */
 
     return_code begin(uint pin, PIO pio = pio0, uint cs = 1);

@@ -217,7 +217,10 @@ void setup()
   tft.setTextSize(1);
   
   // Setup our DMX Input to read on GPIO 0, from channel 1 to 3
-  lcdJunoG_cs1.begin(JUNO_D0, pio0, 1);
+  // TFT_eSPI uses all of instruction memory of pio0 or pio1,
+  // so we use pio1 for both(CS1/CS2) chip monitoring to keep enough memory for TFT_eSPI.
+  // (TFT_eSPI consumes 32 PIO instructions. see ".pio/libdeps/pico/TFT_eSPI/Processors/pio_SPI.pio.h")
+  lcdJunoG_cs1.begin(JUNO_D0, /* pio0 */ pio1, 1);
   lcdJunoG_cs2.begin(JUNO_D0, pio1, 2);
   lcdJunoG_cs1.read_async(buffer_cs1);
   lcdJunoG_cs2.read_async(buffer_cs2);

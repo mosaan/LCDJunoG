@@ -28,7 +28,7 @@ volatile LCDJunoG *active_inputs[NUM_DMA_CHANS] = {nullptr};
 
 LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
 {
-    uint pio_ind = pio_get_index(pio);
+    uint pio_ind = cs - 1;
     if(!prgm_loaded[pio_ind]) {
         /* 
         Attempt to load the PIO assembly program into the PIO program memory
