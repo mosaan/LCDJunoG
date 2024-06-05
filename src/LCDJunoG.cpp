@@ -6,6 +6,7 @@
 
 #include "LCDJunoG.h"
 #include "LCDJunoG.pio.h"
+#include "constants.h"
 
 #if defined(ARDUINO_ARCH_MBED)
   #include <clocks.h>
@@ -62,14 +63,17 @@ LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
     }
 
     // Set this pin's GPIO function (connect PIO to the pad)
-    pio_sm_set_consecutive_pindirs(pio, sm, pin, 12, false);
-    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 8, false);
+    pio_sm_set_pindirs_with_mask(pio, sm, 0, 1 << RS_PIN_RELATIVE_POSITION );
     {
         uint32_t pin_offset;
-        for ( pin_offset = 0; pin_offset < 12; pin_offset++ )
+        // init Data Pins
+        for ( pin_offset = 0; pin_offset < 8; pin_offset++ )
         {
             pio_gpio_init( pio, pin + pin_offset );
         }
+        // init RS Pin
+        pio_gpio_init( pio, JUNO_RS);
     }
 
     //eddi- gpio_pull_up(pin);
