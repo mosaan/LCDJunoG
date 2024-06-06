@@ -131,7 +131,7 @@ void lcdjunog_dma_handler() {
             volatile LCDJunoG *instance = active_inputs[i];
 
             dma_channel_set_write_addr(i, instance->_buf, true);
-            pio_sm_exec(instance->_pio, instance->_sm, pio_encode_jmp(prgm_offsets[pio_get_index(instance->_pio)]));
+            pio_sm_exec(instance->_pio, instance->_sm, pio_encode_jmp(prgm_offsets[instance->_cs - 1]));
             pio_sm_clear_fifos(instance->_pio, instance->_sm);
 
 #ifdef ARDUINO
@@ -186,7 +186,7 @@ void LCDJunoG::read_async(volatile uint32_t *buffer, void (*inputUpdatedCallback
 
     //aaand start!
     dma_channel_set_write_addr(_dma_chan, buffer, true);
-    pio_sm_exec(_pio, _sm, pio_encode_jmp(prgm_offsets[pio_get_index(_pio)]));
+    pio_sm_exec(_pio, _sm, pio_encode_jmp(prgm_offsets[_cs - 1]));
     pio_sm_clear_fifos(_pio, _sm);
 #ifdef ARDUINO
     _last_packet_timestamp = millis();
@@ -223,13 +223,13 @@ void LCDJunoG::end()
         }
     }
     if(!inuse) {
-        prgm_loaded[pio_id] = false;
+        prgm_loaded[_cs - 1] = false;
         if (_cs == 1)
-            pio_remove_program(_pio, &LCDJunoG_cs1_program, prgm_offsets[pio_id]);
+            pio_remove_program(_pio, &LCDJunoG_cs1_program, prgm_offsets[_cs - 1]);
         else if (_cs == 2)
-            pio_remove_program(_pio, &LCDJunoG_cs2_program, prgm_offsets[pio_id]);
+            pio_remove_program(_pio, &LCDJunoG_cs2_program, prgm_offsets[_cs - 1]);
 
-        prgm_offsets[pio_id]=0;
+        prgm_offsets[_cs - 1]=0;
     }
 
     // Unclaim the sm
