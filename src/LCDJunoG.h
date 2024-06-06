@@ -36,6 +36,7 @@ public:
     volatile uint _dma_chan;
     volatile uint _cs;
     volatile bool _prgm_loaded = false;
+    volatile uint _prgm_offset = 0;
 
     volatile unsigned long _last_packet_timestamp=0;
     void (*_cb)(LCDJunoG*);

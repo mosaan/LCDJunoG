@@ -18,7 +18,6 @@
   #include "hardware/irq.h"
 #endif
 
-volatile uint prgm_offsets[] = {0,0};
 /*
 This array tells the interrupt handler which instance has interrupted.
 The interrupt handler has only the ints0 register to go on, so this array needs as many spots as there are DMA channels. 
@@ -39,14 +38,14 @@ LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
             {
                 return ERR_INSUFFICIENT_PRGM_MEM;
             }
-            prgm_offsets[pio_ind] = pio_add_program(pio, &LCDJunoG_cs1_program);
+            _prgm_offset = pio_add_program(pio, &LCDJunoG_cs1_program);
 
         } else if (cs == 2) {
             if (!pio_can_add_program(pio, &LCDJunoG_cs2_program))
             {
                 return ERR_INSUFFICIENT_PRGM_MEM;
             }
-            prgm_offsets[pio_ind] = pio_add_program(pio, &LCDJunoG_cs2_program);
+            _prgm_offset = pio_add_program(pio, &LCDJunoG_cs2_program);
         }
         _prgm_loaded = true;
     }
@@ -80,9 +79,9 @@ LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
     // Generate the default PIO state machine config provided by pioasm
     pio_sm_config sm_conf;
     if (cs == 1) 
-        sm_conf = LCDJunoG_cs1_program_get_default_config(prgm_offsets[pio_ind]);
+        sm_conf = LCDJunoG_cs1_program_get_default_config(_prgm_offset);
     else if (cs == 2) 
-        sm_conf = LCDJunoG_cs2_program_get_default_config(prgm_offsets[pio_ind]);
+        sm_conf = LCDJunoG_cs2_program_get_default_config(_prgm_offset);
     sm_config_set_in_pins(&sm_conf, pin); // for WAIT, IN
     sm_config_set_jmp_pin(&sm_conf, pin); // for JMP
 
@@ -93,7 +92,7 @@ LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
     sm_config_set_fifo_join(&sm_conf, PIO_FIFO_JOIN_RX);
 
     // Load our configuration, jump to the start of the program and run the State Machine
-    pio_sm_init(pio, sm, prgm_offsets[pio_ind], &sm_conf);
+    pio_sm_init(pio, sm, _prgm_offset, &sm_conf);
 
     _pio = pio;
     _sm = sm;
@@ -130,7 +129,7 @@ void lcdjunog_dma_handler() {
             volatile LCDJunoG *instance = active_inputs[i];
 
             dma_channel_set_write_addr(i, instance->_buf, true);
-            pio_sm_exec(instance->_pio, instance->_sm, pio_encode_jmp(prgm_offsets[instance->_cs - 1]));
+            pio_sm_exec(instance->_pio, instance->_sm, pio_encode_jmp(instance->_prgm_offset));
             pio_sm_clear_fifos(instance->_pio, instance->_sm);
 
 #ifdef ARDUINO
@@ -185,7 +184,7 @@ void LCDJunoG::read_async(volatile uint32_t *buffer, void (*inputUpdatedCallback
 
     //aaand start!
     dma_channel_set_write_addr(_dma_chan, buffer, true);
-    pio_sm_exec(_pio, _sm, pio_encode_jmp(prgm_offsets[_cs - 1]));
+    pio_sm_exec(_pio, _sm, pio_encode_jmp(_prgm_offset));
     pio_sm_clear_fifos(_pio, _sm);
 #ifdef ARDUINO
     _last_packet_timestamp = millis();
@@ -224,11 +223,11 @@ void LCDJunoG::end()
     if(!inuse) {
         _prgm_loaded = false;
         if (_cs == 1)
-            pio_remove_program(_pio, &LCDJunoG_cs1_program, prgm_offsets[_cs - 1]);
+            pio_remove_program(_pio, &LCDJunoG_cs1_program, _prgm_offset);
         else if (_cs == 2)
-            pio_remove_program(_pio, &LCDJunoG_cs2_program, prgm_offsets[_cs - 1]);
+            pio_remove_program(_pio, &LCDJunoG_cs2_program, _prgm_offset);
 
-        prgm_offsets[_cs - 1]=0;
+        _prgm_offset=0;
     }
 
     // Unclaim the sm
