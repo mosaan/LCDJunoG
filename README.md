@@ -46,11 +46,11 @@ Predefined Pin Assignments (Parallel mode):
 | 18        | +5V            | VSYS        |
 | 17        | GND            | GND         |
 | 16        | +3V            | (Not used)  |
-| 15        | RST            | GP14        |
-| 14        | CS1            | GP12        |
-| 13        | CS2            | GP13        |
-| 12        | RS             | GP11        |
-| 11        | WE             | GP10        |
+| 15        | RST            | GP21        |
+| 14        | CS2 (*1)       | GP20        |
+| 13        | CS1 (*1)       | GP19        |
+| 12        | RS             | GP18        |
+| 11        | WE             | GP17        |
 | 10        | D0             | GP2         |
 | 9         | D1             | GP3         |
 | 8         | D2             | GP4         |
@@ -61,6 +61,8 @@ Predefined Pin Assignments (Parallel mode):
 | 3         | D7             | GP9         |
 | 2         | BRGT           | GP28        |
 | 1         | BRGT Vref      | +3V         |
+
+*1: Check if the pin configuration might be reversed
 
 | LCD Pin# | LCD Function  | RpiPico Pin         |
 | -------- | ------------- | ------------------- |
