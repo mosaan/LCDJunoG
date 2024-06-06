@@ -83,7 +83,7 @@ void drawPixels(uint8_t packed_pixels, uint8_t x, uint8_t y_index) {
   //  if (((packed_pixels >> b) & 0x1) == 1) tft.drawPixel(real_x, pixel_y[y+b], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y+b], TFT_WHITE);
   //}
   //unrolled loop for performance:
-#if TFT_PARALLEL_8_BIT && !FORCE_INTERLACE // 8-bit parallel mode. fill pixels with fillRect()
+#if (TFT_PARALLEL_8_BIT & !FORCE_INTERLACE) // 8-bit parallel mode. fill pixels with fillRect()
   if ((packed_pixels & 0x1) == 0x1)   tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
   if ((packed_pixels & 0x2) == 0x2)   tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
   if ((packed_pixels & 0x4) == 0x4)   tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
@@ -106,7 +106,7 @@ void drawPixels(uint8_t packed_pixels, uint8_t x, uint8_t y_index) {
 
 void fillScreenWithBackgroundColor(uint32_t bgcolor) {
   tft.startWrite();
-#ifdef TFT_PARALLEL_8_BIT && !FORCE_INTERLACE // 8-bit parallel mode. just fill screen with fillScreen().
+#if (TFT_PARALLEL_8_BIT & !FORCE_INTERLACE) // 8-bit parallel mode. just fill screen with fillScreen().
   tft.fillScreen(bgcolor);
 #else // SPI mode. SPI is too slow to draw all LCD pixels. So we draw interlaced pixels with bgcolor and all the rest filled with Black.
   tft.fillScreen(TFT_BLACK);
