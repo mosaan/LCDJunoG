@@ -18,7 +18,6 @@
   #include "hardware/irq.h"
 #endif
 
-bool prgm_loaded[] = {false,false};
 volatile uint prgm_offsets[] = {0,0};
 /*
 This array tells the interrupt handler which instance has interrupted.
@@ -30,7 +29,7 @@ volatile LCDJunoG *active_inputs[NUM_DMA_CHANS] = {nullptr};
 LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
 {
     uint pio_ind = cs - 1;
-    if(!prgm_loaded[pio_ind]) {
+    if(!_prgm_loaded) {
         /* 
         Attempt to load the PIO assembly program into the PIO program memory
         */
@@ -49,7 +48,7 @@ LCDJunoG::return_code LCDJunoG::begin(uint pin, PIO pio, uint cs)
             }
             prgm_offsets[pio_ind] = pio_add_program(pio, &LCDJunoG_cs2_program);
         }
-        prgm_loaded[pio_ind] = true;
+        _prgm_loaded = true;
     }
 
     /* 
@@ -223,7 +222,7 @@ void LCDJunoG::end()
         }
     }
     if(!inuse) {
-        prgm_loaded[_cs - 1] = false;
+        _prgm_loaded = false;
         if (_cs == 1)
             pio_remove_program(_pio, &LCDJunoG_cs1_program, prgm_offsets[_cs - 1]);
         else if (_cs == 2)
