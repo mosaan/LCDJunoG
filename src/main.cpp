@@ -83,6 +83,16 @@ void drawPixels(uint8_t packed_pixels, uint8_t x, uint8_t y_index) {
   //  if (((packed_pixels >> b) & 0x1) == 1) tft.drawPixel(real_x, pixel_y[y+b], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y+b], TFT_WHITE);
   //}
   //unrolled loop for performance:
+#if TFT_PARALLEL_8_BIT && !FORCE_INTERLACE // 8-bit parallel mode. fill pixels with fillRect()
+  if ((packed_pixels & 0x1) == 0x1)   tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
+  if ((packed_pixels & 0x2) == 0x2)   tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
+  if ((packed_pixels & 0x4) == 0x4)   tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
+  if ((packed_pixels & 0x8) == 0x8)   tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
+  if ((packed_pixels & 0x10) == 0x10) tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
+  if ((packed_pixels & 0x20) == 0x20) tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
+  if ((packed_pixels & 0x40) == 0x40) tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y++], ZOOM_X, ZOOM_Y, tft_bgcolor);
+  if ((packed_pixels & 0x80) == 0x80) tft.fillRect(real_x, pixel_y[y  ], ZOOM_X, ZOOM_Y, TFT_BLACK); else tft.fillRect(real_x, pixel_y[y  ], ZOOM_X, ZOOM_Y, tft_bgcolor);
+#else // SPI mode. SPI is too slow to draw all LCD pixels. So we draw interlaced pixels.
   if ((packed_pixels & 0x1) == 0x1)   tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
   if ((packed_pixels & 0x2) == 0x2)   tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
   if ((packed_pixels & 0x4) == 0x4)   tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
@@ -91,16 +101,21 @@ void drawPixels(uint8_t packed_pixels, uint8_t x, uint8_t y_index) {
   if ((packed_pixels & 0x20) == 0x20) tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
   if ((packed_pixels & 0x40) == 0x40) tft.drawPixel(real_x, pixel_y[y++], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y++], tft_bgcolor);
   if ((packed_pixels & 0x80) == 0x80) tft.drawPixel(real_x, pixel_y[y  ], TFT_BLACK); else tft.drawPixel(real_x, pixel_y[y  ], tft_bgcolor);
+#endif
 }
 
-void fillscreenInterlaced(uint32_t bgcolor) {
+void fillScreenWithBackgroundColor(uint32_t bgcolor) {
   tft.startWrite();
+#ifdef TFT_PARALLEL_8_BIT && !FORCE_INTERLACE // 8-bit parallel mode. just fill screen with fillScreen().
+  tft.fillScreen(bgcolor);
+#else // SPI mode. SPI is too slow to draw all LCD pixels. So we draw interlaced pixels with bgcolor and all the rest filled with Black.
   tft.fillScreen(TFT_BLACK);
   for (uint x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
     for (uint y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
         drawPixels(back_buffer[x][y], x, y);
     }
   }
+#endif
   tft.endWrite();
 }
 
@@ -130,7 +145,7 @@ void tft_change_bgcolor(uint32_t analog_read) {
   } 
 
   if (tft_bgcolor != tft_bgcolor_prev) {
-    fillscreenInterlaced(tft_bgcolor);
+    fillScreenWithBackgroundColor(tft_bgcolor);
     tft_bgcolor_prev = tft_bgcolor;
   }
 }
@@ -183,9 +198,9 @@ void setup()
 #define DRAW_INFO
 #ifdef DRAW_INFO
 #ifdef MODE_BRIGHTNESS
-  fillscreenInterlaced(tft_bgcolor);
+  fillScreenWithBackgroundColor(tft_bgcolor);
   tft_change_brightness(analog_read);
-#else
+#elif MODE_BGCOLOR
   tft_change_bgcolor(analog_read);
 #endif
   tft.setTextColor(TFT_BLACK);
@@ -196,7 +211,7 @@ void setup()
   tft.drawString("JunoG LCD replacement V2.1.3", tft.width() /2, tft.height() / 2 - 20 );
   //tft.drawString("CPU_FREQ:" + String(rp2040.f_cpu()), tft.width() /2, tft.height() / 2 + 10 );
   delay(500);
-  fillscreenInterlaced(tft_bgcolor);
+  fillScreenWithBackgroundColor(tft_bgcolor);
 #endif
 
 #ifdef DRAW_PINOUT  
@@ -233,7 +248,9 @@ unsigned long time_now = 0;
 unsigned long my_millis = 0;
 
 void loop()
-{  
+{
+// TODO: Move the other core to handle brightness and bgcolor changes
+#if MODE_BRIGHTNESS | MODE_BGCOLOR | DEBUG_READ
   my_millis = millis();
 
   if(my_millis >= time_now + period){
@@ -241,7 +258,7 @@ void loop()
     uint32_t analog_read = analogRead(JUNO_BRGT);
 #ifdef MODE_BRIGHTNESS
         tft_change_brightness(analog_read);
-#else        
+#elif MODE_BGCOLOR
         tft_change_bgcolor(analog_read);
 #endif
 #ifdef DEBUG_READ
@@ -254,6 +271,7 @@ void loop()
     tft.drawString(String(analog_read), tft.width() /2, 0);
 #endif
   }
+#endif // MODE_BRIGHTNESS | MODE_BGCOLOR | DEBUG_READ
 
   if(latest_packet_timestamp_cs1 == lcdJunoG_cs1.latest_packet_timestamp() && latest_packet_timestamp_cs2 == lcdJunoG_cs2.latest_packet_timestamp()) {
     return; // no packet received
