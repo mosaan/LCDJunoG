@@ -65,8 +65,11 @@ volatile uint8_t back_buffer[ORIGINAL_LCD_WIDTH][Y_PACKED_BYTES_LENGTH]; /* max 
 volatile uint16_t pixel_x[ORIGINAL_LCD_WIDTH]; /* X location (pre-calculated) of actual pixel on new screen */
 volatile uint16_t pixel_y[ORIGINAL_LCD_HEIGHT]; /* Y location (pre-calculated) of actual pixel on new screen */
 
-uint32_t tft_bgcolor = TFT_ORANGE;
+#define ADC_RESOLUTION 6
+uint32_t tft_fgcolor = TFT_BLACK;
+uint32_t tft_bgcolor = TFT_WHITE;
 uint32_t tft_bgcolor_prev = TFT_BLACK;
+bool force_redraw = false;
 
 /*
   Draws a packed_pixels byte on the TFT screen at x,y_index
@@ -119,32 +122,39 @@ void fillScreenWithBackgroundColor(uint32_t bgcolor) {
   tft.endWrite();
 }
 
-void tft_change_brightness(uint32_t analog_read) {
-//42 54  =  50 255  0 -> 12 
-  analogWrite( JUNO_BACKLIGHT, ((analog_read - 41) & 0xc) * 17 + 51 );
+// convert hue to rgb565 value
+// saturation and value are fixed to max value.
+uint16_t inline rgb565FromHue(uint8_t hue) {
+  uint8_t r = 0, g = 0, b = 0;
+  if (hue < 85) {
+    r = hue * 3;
+    g = 255 - hue * 3;
+  } else if (hue < 170) {
+    hue -= 85;
+    g = hue * 3;
+    b = 255 - hue * 3;
+  } else {
+    hue -= 170;
+    b = hue * 3;
+    r = 255 - hue * 3;
+  }
+  return tft.color565(r, g, b);
 }
 
 void tft_change_bgcolor(uint32_t analog_read) {
-  //Serial.println("ANALOG"+ String(analog_read));
-  //min = 42 
-  //max = 54
-  if (analog_read < 44) {
-    tft_bgcolor = TFT_ORANGE;
-  } else if ( analog_read >= 44 && analog_read < 46) {
-    tft_bgcolor = TFT_SKYBLUE;
-  } else if ( analog_read >= 46 && analog_read < 48) {
-    tft_bgcolor = TFT_GREENYELLOW;
-  } else if ( analog_read >= 48 && analog_read < 50) {
-    tft_bgcolor = TFT_YELLOW;
-  } else if ( analog_read >= 50 && analog_read < 52) {
+  // we use upper 1/4 value of the ADC resolution as a threshold to switch between black and white mode.
+  uint8_t mode_val = (analog_read >> (ADC_RESOLUTION - 2));
+  // 2 MSBits are ignored
+  uint8_t color_val = (analog_read & ((1 << (ADC_RESOLUTION - 2)) - 1));
+  if(mode_val == 0b11) { // white mode
     tft_bgcolor = TFT_WHITE;
-  } else if ( analog_read >= 52 && analog_read < 54) {
-    tft_bgcolor = TFT_CYAN;
-  } else if ( analog_read >= 54) {
-    tft_bgcolor = TFT_WHITE;
-  } 
+  } else {
+    uint8_t hue = map(color_val, 0, (1 << (ADC_RESOLUTION - 2)) - 1, 0, 255);
+    tft_bgcolor = rgb565FromHue(hue);
+  }
 
   if (tft_bgcolor != tft_bgcolor_prev) {
+    force_redraw = true;
     fillScreenWithBackgroundColor(tft_bgcolor);
     tft_bgcolor_prev = tft_bgcolor;
   }
@@ -152,7 +162,7 @@ void tft_change_bgcolor(uint32_t analog_read) {
 
 void setup()
 {
-  analogReadResolution(6);
+  analogReadResolution(ADC_RESOLUTION);
   uint32_t analog_read = analogRead(JUNO_BRGT);
 
 
@@ -164,14 +174,6 @@ void setup()
   tft.setRotation(1);
   tft_xoffset = (tft.width() - ORIGINAL_LCD_WIDTH * ZOOM_X) / 2 - ((tft.width() - ORIGINAL_LCD_WIDTH * ZOOM_X) / 2 % ZOOM_X);
   tft_yoffset = (tft.height() - ORIGINAL_LCD_HEIGHT * ZOOM_Y) / 2 - ((tft.height() - ORIGINAL_LCD_HEIGHT * ZOOM_Y) / 2 % ZOOM_Y);
-
-  pinMode( JUNO_BACKLIGHT, OUTPUT );
-#ifdef MODE_BRIGHTNESS
-  analogWriteResolution(8);
-  analogWrite( JUNO_BACKLIGHT, int((analog_read - 2750) / 2.9) );
-#else
-  digitalWrite(JUNO_BACKLIGHT, HIGH);
-#endif
 
 #ifdef DRAW_SPLASH
   tft_change_bgcolor();
@@ -197,10 +199,7 @@ void setup()
 
 #define DRAW_INFO
 #ifdef DRAW_INFO
-#ifdef MODE_BRIGHTNESS
-  fillScreenWithBackgroundColor(tft_bgcolor);
-  tft_change_brightness(analog_read);
-#elif MODE_BGCOLOR
+#ifdef MODE_BGCOLOR
   tft_change_bgcolor(analog_read);
 #endif
   tft.setTextColor(TFT_BLACK);
@@ -249,17 +248,15 @@ unsigned long my_millis = 0;
 
 void loop()
 {
-// TODO: Move the other core to handle brightness and bgcolor changes
-#if MODE_BRIGHTNESS | MODE_BGCOLOR | DEBUG_READ
+// TODO: Move the other core to handle bgcolor changes
+#if MODE_BGCOLOR | DEBUG_READ
   my_millis = millis();
 
   if(my_millis >= time_now + period){
     time_now += period;
     uint32_t analog_read = analogRead(JUNO_BRGT);
-#ifdef MODE_BRIGHTNESS
-        tft_change_brightness(analog_read);
-#elif MODE_BGCOLOR
-        tft_change_bgcolor(analog_read);
+#ifdef MODE_BGCOLOR
+    tft_change_bgcolor(analog_read);
 #endif
 #ifdef DEBUG_READ
     tft.fillRect(tft.width() / 2 - 40, 0, 80, 14, TFT_BLACK);
@@ -271,11 +268,12 @@ void loop()
     tft.drawString(String(analog_read), tft.width() /2, 0);
 #endif
   }
-#endif // MODE_BRIGHTNESS | MODE_BGCOLOR | DEBUG_READ
+#endif // MODE_BGCOLOR | DEBUG_READ
 
-  if(latest_packet_timestamp_cs1 == lcdJunoG_cs1.latest_packet_timestamp() && latest_packet_timestamp_cs2 == lcdJunoG_cs2.latest_packet_timestamp()) {
+  if(!force_redraw && latest_packet_timestamp_cs1 == lcdJunoG_cs1.latest_packet_timestamp() && latest_packet_timestamp_cs2 == lcdJunoG_cs2.latest_packet_timestamp()) {
     return; // no packet received
-  } 
+  }
+  force_redraw = false;
   latest_packet_timestamp_cs1 = lcdJunoG_cs1.latest_packet_timestamp();
   latest_packet_timestamp_cs2 = lcdJunoG_cs2.latest_packet_timestamp();
   tft.startWrite();

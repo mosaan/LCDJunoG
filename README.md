@@ -15,6 +15,17 @@ Slight modifications as follows
 - Pin definitions in `platformio.ini` now work correctly. See `platformio.ini` for pinout notes.
 - Fix few minor bugs.
 - Refactor codes for better readability.
+- Remove `MODE_BRIGHTNESS` and change functionality of `MODE_BGCOLOR`. (see below)
+
+About `MODE_BGCOLOR`
+====================
+
+In `MODE_BGCOLOR`, you can control LCD background color with `LCD CONTRAST` knob on Juno G.
+
+- In the first 3/4 of the knob, a color is selected from the hue ring according to the knob position.
+- In the remaining 1/4 of the knob, the background color is fixed at white.
+
+Without `MODE_BGCOLOR`, background color fixed to white.
 
 PlatformIO Build Environments
 =============================
@@ -36,7 +47,7 @@ BOM:
 - FFC/FPC connector
   - 1.0mm pitch 18-pin, bottom connection; for Juno G connection.
   - (Needed in parallel mode only) 0.5mm pitch 40-pin, top connection; for LCD connection.
-- (Optional) 0.1uF ceramic capacitor; for "LCD CONTRAST" nob stability.
+- (Optional) 0.1uF ceramic capacitor; for "LCD CONTRAST" knob stability.
 
 Predefined Pin Assignments (Parallel mode):
 ===========================================
