@@ -115,7 +115,7 @@ void fillScreenWithBackgroundColor(uint32_t bgcolor) {
   tft.fillScreen(TFT_BLACK);
   for (uint x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
     for (uint y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
-        drawPixels(back_buffer[x][y], x, y);
+        drawPixels(0, x, y);
     }
   }
 #endif
@@ -155,7 +155,6 @@ void tft_change_bgcolor(uint32_t analog_read) {
 
   if (tft_bgcolor != tft_bgcolor_prev) {
     force_redraw = true;
-    fillScreenWithBackgroundColor(tft_bgcolor);
     tft_bgcolor_prev = tft_bgcolor;
   }
 }
@@ -243,18 +242,18 @@ unsigned long latest_packet_timestamp_cs1 = 0;
 unsigned long latest_packet_timestamp_cs2 = 0;
 
 int period = 500;
-unsigned long time_now = 0;
-unsigned long my_millis = 0;
+long time_last_adc_read = 0;
+long time_now = 0;
 
 void loop()
 {
 // TODO: Move the other core to handle bgcolor changes
 #if MODE_BGCOLOR | DEBUG_READ
-  my_millis = millis();
+  time_now = millis();
 
-  if(my_millis >= time_now + period){
-    time_now += period;
-    uint32_t analog_read = analogRead(JUNO_BRGT);
+  if(time_now - time_last_adc_read - period >= 0) {
+    time_last_adc_read = time_now;
+    int analog_read = analogRead(JUNO_BRGT);
 #ifdef MODE_BGCOLOR
     tft_change_bgcolor(analog_read);
 #endif
@@ -265,15 +264,25 @@ void loop()
     tft.setTextSize(1);
   
     tft.setTextDatum(TC_DATUM);
-    tft.drawString(String(analog_read), tft.width() /2, 0);
+    tft.drawString(String(analog_read) + String("/") + String(time_last_adc_read), tft.width() /2, 0);
 #endif
   }
 #endif // MODE_BGCOLOR | DEBUG_READ
 
-  if(!force_redraw && latest_packet_timestamp_cs1 == lcdJunoG_cs1.latest_packet_timestamp() && latest_packet_timestamp_cs2 == lcdJunoG_cs2.latest_packet_timestamp()) {
+  if(force_redraw) {
+    tft.startWrite();
+    for(int8_t x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
+      for(int8_t y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
+        drawPixels(back_buffer[x][y], x, y);
+      }
+    }
+    tft.endWrite();
+    force_redraw = false;
+  }
+
+  if(latest_packet_timestamp_cs1 == lcdJunoG_cs1.latest_packet_timestamp() && latest_packet_timestamp_cs2 == lcdJunoG_cs2.latest_packet_timestamp()) {
     return; // no packet received
   }
-  force_redraw = false;
   latest_packet_timestamp_cs1 = lcdJunoG_cs1.latest_packet_timestamp();
   latest_packet_timestamp_cs2 = lcdJunoG_cs2.latest_packet_timestamp();
   tft.startWrite();
