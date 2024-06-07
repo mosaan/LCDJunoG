@@ -51,14 +51,14 @@ Predefined Pin Assignments (Parallel mode):
 | 13        | CS1 (*1)       | GP19        |
 | 12        | RS             | GP18        |
 | 11        | WE             | GP17        |
-| 10        | D0             | GP2         |
-| 9         | D1             | GP3         |
-| 8         | D2             | GP4         |
-| 7         | D3             | GP5         |
-| 6         | D4             | GP6         |
-| 5         | D5             | GP7         |
-| 4         | D6             | GP8         |
-| 3         | D7             | GP9         |
+| 10        | D0             | GP8         |
+| 9         | D1             | GP9         |
+| 8         | D2             | GP10        |
+| 7         | D3             | GP11        |
+| 6         | D4             | GP12        |
+| 5         | D5             | GP13        |
+| 4         | D6             | GP14        |
+| 3         | D7             | GP15        |
 | 2         | BRGT           | GP28        |
 | 1         | BRGT Vref      | +3V         |
 
@@ -96,7 +96,7 @@ Predefined Pin Assignments (Parallel mode):
 | 13       | SPI SDI/SDA   | (not used)          |
 | 12       | RDX           | 3.3V                |
 | 11       | WRX/SPI SCL   | GP26                |
-| 10       | DCX/RS(SPI-4) | GP25                |
+| 10       | DCX/RS(SPI-4) | GP22                |
 | 9        | CSX/SPI CS    | GND                 |
 | 8        | FMARK(TE)     | (not used)          |
 | 7        | VDDA          | 3.3V                |
