@@ -12,6 +12,12 @@
 #ifndef JUNOG_DEBUGGER
 // Define in setup to disable all #warnings in library (can be put in User_Setup_Select.h)
 #define DISABLE_ALL_LIBRARY_WARNINGS
+#ifdef DEBUG_SERIAL
+#define DEBUG_PRINT(content) DEBUG_PRINT(content)
+#else
+#define DEBUG_PRINT(content) // do nothing.
+#endif
+
 #ifdef TFT_PARALLEL_8_BIT
 // parallel mode does not need to call startWrite() and endWrite()
 #define TFT_START_WRITE
@@ -171,12 +177,13 @@ void setup()
 {
   analogReadResolution(ADC_RESOLUTION);
   uint32_t analog_read = analogRead(JUNO_BRGT);
+#ifdef DEBUG_SERIAL
+  Serial.begin(115200);
+  delay(2000);
+  Serial.setTimeout(50);
+#endif
 
-
-  //Serial.begin(115200);
-  // delay(2000);
-  //Serial.setTimeout(50);
-  // Serial.println("juno g lcd emulator");
+  DEBUG_PRINT("juno g lcd emulator");
   tft.init();
   tft.setRotation(1);
 #ifdef TFT_PARALLEL_8_BIT
@@ -241,6 +248,7 @@ void setup()
 
   // Setup the onboard LED so that we can blink when we receives packets
   pinMode(LED_BUILTIN, OUTPUT);
+  DEBUG_PRINT("Setup finished");
 }
 
 volatile uint8_t x_cs1 = 0; //X address counter for CS1: 7 bit: values 0 up and to including 127: actually max. 120
@@ -262,7 +270,8 @@ void loop()
 #if MODE_BGCOLOR | DEBUG_READ
   time_now = millis();
 
-  if(time_now - time_last_adc_read - period >= 0) {
+  if(time_now - time_last_adc_read >= period) {
+    DEBUG_PRINT("ADC read");
     time_last_adc_read = time_now;
     int analog_read = analogRead(JUNO_BRGT);
 #ifdef MODE_BGCOLOR
@@ -277,26 +286,28 @@ void loop()
     tft.setTextDatum(TC_DATUM);
     tft.drawString(String(analog_read) + String("/") + String(time_last_adc_read), tft.width() /2, 0);
 #endif
+    DEBUG_PRINT("ADC read done");
   }
 #endif // MODE_BGCOLOR | DEBUG_READ
 
   if(force_redraw) {
-    tft.startWrite();
-    for(int8_t x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
-      for(int8_t y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
+    DEBUG_PRINT("force redraw");
+    for(uint8_t x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
+      for(uint8_t y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
         drawPixels(back_buffer[x][y], x, y);
       }
     }
-    tft.endWrite();
     force_redraw = false;
   }
 
   if(latest_packet_timestamp_cs1 == lcdJunoG_cs1.latest_packet_timestamp() && latest_packet_timestamp_cs2 == lcdJunoG_cs2.latest_packet_timestamp()) {
     return; // no packet received
   }
+  DEBUG_PRINT("packet received");
   latest_packet_timestamp_cs1 = lcdJunoG_cs1.latest_packet_timestamp();
   latest_packet_timestamp_cs2 = lcdJunoG_cs2.latest_packet_timestamp();
   TFT_START_WRITE;
+  DEBUG_PRINT("start write");
   for (uint i = 0; i < RAW_DATA_BUFFER_LENGTH; i++)  
   {
     { //CS 1
@@ -346,9 +357,12 @@ void loop()
       }
     }
   }
+  DEBUG_PRINT("cs1/2 processed");
   TFT_END_WRITE;
+  DEBUG_PRINT("end write");
   // Blink the LED to indicate that a packet was received
   if (!led_on) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
   led_on = !led_on;
+  DEBUG_PRINT("packet processed");
 }
 #endif
