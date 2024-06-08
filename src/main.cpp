@@ -83,7 +83,6 @@ volatile uint16_t pixel_y[ORIGINAL_LCD_HEIGHT]; /* Y location (pre-calculated) o
 uint32_t tft_fgcolor = TFT_BLACK;
 uint32_t tft_bgcolor = TFT_WHITE;
 uint32_t tft_bgcolor_prev = TFT_BLACK;
-bool force_redraw = false;
 
 /*
   Draws a packed_pixels byte on the TFT screen at x,y_index
@@ -168,8 +167,14 @@ void tft_change_bgcolor(uint32_t analog_read) {
   }
 
   if (tft_bgcolor != tft_bgcolor_prev) {
-    force_redraw = true;
+    DEBUG_PRINT("force redraw");
     tft_bgcolor_prev = tft_bgcolor;
+    fillScreenWithBackgroundColor(tft_bgcolor);
+    for(uint8_t x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
+      for(uint8_t y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
+        drawPixels(back_buffer[x][y], x, y);
+      }
+    }
   }
 }
 
@@ -289,16 +294,6 @@ void loop()
     DEBUG_PRINT("ADC read done");
   }
 #endif // MODE_BGCOLOR | DEBUG_READ
-
-  if(force_redraw) {
-    DEBUG_PRINT("force redraw");
-    for(uint8_t x = 0; x < ORIGINAL_LCD_WIDTH; x++) {
-      for(uint8_t y = 0; y < Y_PACKED_BYTES_LENGTH; y++) {
-        drawPixels(back_buffer[x][y], x, y);
-      }
-    }
-    force_redraw = false;
-  }
 
   if(latest_packet_timestamp_cs1 == lcdJunoG_cs1.latest_packet_timestamp() && latest_packet_timestamp_cs2 == lcdJunoG_cs2.latest_packet_timestamp()) {
     return; // no packet received
