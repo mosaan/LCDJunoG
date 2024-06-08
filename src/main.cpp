@@ -313,7 +313,6 @@ void loop()
           showcmd( cs, val );
 #endif
       // JUNO-G has KS0713 like LCD controller. It has 2 display data RAMs. One for the left hand part and one for the right hand part.
-      // 
       if ((val & 0xf0 /*11110000*/) == 0xb0 /*1011000*/) { //Sets the Y address at the Y address register
           y_cs1 = val & 0x0f /*00001111*/;
           x_cs1 = 0;
