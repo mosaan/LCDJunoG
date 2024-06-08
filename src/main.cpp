@@ -12,6 +12,14 @@
 #ifndef JUNOG_DEBUGGER
 // Define in setup to disable all #warnings in library (can be put in User_Setup_Select.h)
 #define DISABLE_ALL_LIBRARY_WARNINGS
+#ifdef TFT_PARALLEL_8_BIT
+// parallel mode does not need to call startWrite() and endWrite()
+#define TFT_START_WRITE
+#define TFT_END_WRITE
+#else // SPI mode
+#define TFT_START_WRITE tft.startWrite()
+#define TFT_END_WRITE tft.endWrite()
+#endif
 
 #include <Arduino.h>
 
@@ -108,7 +116,7 @@ void drawPixels(uint8_t packed_pixels, uint8_t x, uint8_t y_index) {
 }
 
 void fillScreenWithBackgroundColor(uint32_t bgcolor) {
-  tft.startWrite();
+  TFT_START_WRITE;
 #if (TFT_PARALLEL_8_BIT & !FORCE_INTERLACE) // 8-bit parallel mode. just fill screen with fillScreen().
   tft.fillScreen(bgcolor);
 #else // SPI mode. SPI is too slow to draw all LCD pixels. So we draw interlaced pixels with bgcolor and all the rest filled with Black.
@@ -119,7 +127,7 @@ void fillScreenWithBackgroundColor(uint32_t bgcolor) {
     }
   }
 #endif
-  tft.endWrite();
+  TFT_END_WRITE;
 }
 
 // convert hue to rgb565 value
@@ -171,6 +179,9 @@ void setup()
   // Serial.println("juno g lcd emulator");
   tft.init();
   tft.setRotation(1);
+#ifdef TFT_PARALLEL_8_BIT
+  tft.initDMA(); // Enable DMA transfer for parallel mode
+#endif
   tft_xoffset = (tft.width() - ORIGINAL_LCD_WIDTH * ZOOM_X) / 2 - ((tft.width() - ORIGINAL_LCD_WIDTH * ZOOM_X) / 2 % ZOOM_X);
   tft_yoffset = (tft.height() - ORIGINAL_LCD_HEIGHT * ZOOM_Y) / 2 - ((tft.height() - ORIGINAL_LCD_HEIGHT * ZOOM_Y) / 2 % ZOOM_Y);
 
@@ -285,7 +296,7 @@ void loop()
   }
   latest_packet_timestamp_cs1 = lcdJunoG_cs1.latest_packet_timestamp();
   latest_packet_timestamp_cs2 = lcdJunoG_cs2.latest_packet_timestamp();
-  tft.startWrite();
+  TFT_START_WRITE;
   for (uint i = 0; i < RAW_DATA_BUFFER_LENGTH; i++)  
   {
     { //CS 1
@@ -335,7 +346,7 @@ void loop()
       }
     }
   }
-  tft.endWrite();
+  TFT_END_WRITE;
   // Blink the LED to indicate that a packet was received
   if (!led_on) digitalWrite(LED_BUILTIN, HIGH); else digitalWrite(LED_BUILTIN, LOW);
   led_on = !led_on;
