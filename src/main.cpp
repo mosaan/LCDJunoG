@@ -253,8 +253,8 @@ unsigned long latest_packet_timestamp_cs1 = 0;
 unsigned long latest_packet_timestamp_cs2 = 0;
 
 int period = 500;
-long time_last_adc_read = 0;
-long time_now = 0;
+unsigned long time_last_adc_read = 0;
+unsigned long time_now = 0;
 
 void loop()
 {
