@@ -60,7 +60,7 @@
 	(pad 42 smd rect (at -11.35 -1.32 0.00) (size 2.20 3.30) (layers F.Cu F.Paste F.Mask))
 	(fp_circle (center 10.60 1.43) (end 10.90 1.43) (layer F.SilkS) (width 0.25))
 	(fp_circle (center 12.80 1.72) (end 12.83 1.72) (layer F.Fab) (width 0.06))
-	(model "{build_dir}/Pico-R3.step"
+	(model "{build_dir}/FPC-SMD_P0.50-40P_LCS-SJ-H2.0.step"
 		(offset (xyz 0.000 1.170 -0.000))
 		(scale (xyz 1 1 1))
 		(rotate (xyz 0 0 0))
