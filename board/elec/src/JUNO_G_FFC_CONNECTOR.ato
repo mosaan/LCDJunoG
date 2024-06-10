@@ -1,0 +1,27 @@
+component JUNO_G_FFC_CONNECTOR:
+    # component AFA01_minus_S18FCC_minus_00
+    footprint = "FPC-SMD_AFA01-S18FCC-00"
+    lcsc_id = "C262388"
+    mpn = "C262388"
+    # pins
+    signal BRGT_Vref  ~ pin  1
+    signal BRGT       ~ pin  2
+    signal D7         ~ pin  3
+    signal D6         ~ pin  4
+    signal D5         ~ pin  5
+    signal D4         ~ pin  6
+    signal D3         ~ pin  7
+    signal D2         ~ pin  8
+    signal D1         ~ pin  9
+    signal D0         ~ pin 10
+    signal WE         ~ pin 11
+    signal RS         ~ pin 12
+    signal CS1        ~ pin 13
+    signal CS2        ~ pin 14
+    signal RST        ~ pin 15
+    signal VDD3       ~ pin 16
+    signal GND        ~ pin 17
+    signal VDD5       ~ pin 18
+    signal BASE_1     ~ pin 19
+    signal BASE_2     ~ pin 20
+

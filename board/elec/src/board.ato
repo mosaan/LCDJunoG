@@ -1,0 +1,92 @@
+from "JUNO_G_FFC_CONNECTOR.ato" import JUNO_G_FFC_CONNECTOR
+from "LCD_FPC_CONNECTOR.ato" import LCD_FPC_CONNECTOR
+from "PICO.ato" import PICO
+from "generics/resistors.ato" import Resistor
+from "generics/capacitors.ato" import Capacitor
+
+module Board:
+    # some comment
+    signal VDD5
+    signal VDD3
+    signal GND
+
+    connector_lcd = new LCD_FPC_CONNECTOR
+    connector_junog = new JUNO_G_FFC_CONNECTOR
+    pico = new PICO
+    resistor_led = new Resistor
+    resistor_led.value = 5ohm to 10ohm
+    resistor_led.footprint = "R0603"
+    capacitor_lcd_contrast_nob = new Capacitor
+    capacitor_lcd_contrast_nob.value = 0.1uF +/- 10%
+    capacitor_lcd_contrast_nob.voltage = "6V"
+    capacitor_lcd_contrast_nob.footprint = "C0603"
+
+    # power supply connections for netlist naming.
+    VDD5 ~ pico.VSYS
+    VDD3 ~ pico._3V3_OUT
+    GND ~ pico.GND
+
+    connector_junog.VDD5      ~ VDD5
+    connector_junog.GND       ~ GND
+    # connector_junog.VDD3      ~ (Not used)
+    connector_junog.RST       ~ pico.GP21
+    connector_junog.CS2       ~ pico.GP20
+    connector_junog.CS1       ~ pico.GP19
+    connector_junog.RS        ~ pico.GP18
+    connector_junog.WE        ~ pico.GP17
+    connector_junog.D0        ~ pico.GP8
+    connector_junog.D1        ~ pico.GP9
+    connector_junog.D2        ~ pico.GP10
+    connector_junog.D3        ~ pico.GP11
+    connector_junog.D4        ~ pico.GP12
+    connector_junog.D5        ~ pico.GP13
+    connector_junog.D6        ~ pico.GP14
+    connector_junog.D7        ~ pico.GP15
+    connector_junog.BRGT      ~ pico.GP28
+    connector_junog.BRGT      ~ capacitor_lcd_contrast_nob.p1
+    capacitor_lcd_contrast_nob.p2 ~ GND
+    connector_junog.BRGT_Vref ~ VDD3
+
+    connector_lcd.IM2          ~ GND
+    connector_lcd.IM1          ~ VDD3
+    connector_lcd.IM0          ~ VDD3
+    connector_lcd.GND          ~ GND
+    connector_lcd.LED_K        ~ GND
+    connector_lcd.LED_K        ~ GND
+    connector_lcd.LED_K        ~ GND
+    connector_lcd.LED_A        ~ resistor_led.p1
+    resistor_led.p2            ~ VDD3
+    # connector_lcd.DB15         ~ (not used)
+    # connector_lcd.DB14         ~ (not used)
+    # connector_lcd.DB13         ~ (not used)
+    # connector_lcd.DB12         ~ (not used)
+    # connector_lcd.DB11         ~ (not used)
+    # connector_lcd.DB10         ~ (not used)
+    # connector_lcd.DB9          ~ (not used)
+    # connector_lcd.DB8          ~ (not used)
+    connector_lcd.DB7          ~ pico.GP7
+    connector_lcd.DB6          ~ pico.GP6
+    connector_lcd.DB5          ~ pico.GP5
+    connector_lcd.DB4          ~ pico.GP4
+    connector_lcd.DB3          ~ pico.GP3
+    connector_lcd.DB2          ~ pico.GP2
+    connector_lcd.DB1          ~ pico.GP1
+    connector_lcd.DB0          ~ pico.GP0
+    connector_lcd.GND          ~ GND
+    connector_lcd.RESET        ~ pico.GP22
+    # connector_lcd.SPI_SDO      ~ (not used)
+    # connector_lcd.SPI_SDI_SDA  ~ (not used)
+    connector_lcd.RDX          ~ VDD3
+    connector_lcd.WRX_SPI_SCL  ~ pico.GP26
+    connector_lcd.DCX_RS_SPI   ~ pico.GP27
+    connector_lcd.CSX_SPI_CS   ~ GND
+    # connector_lcd.FMARK_TE     ~ (not used)
+    connector_lcd.VDDA         ~ VDD3
+    connector_lcd.VDDI         ~ VDD3
+    connector_lcd.GND          ~ GND
+    # connector_lcd.YD           ~ (not used)
+    # connector_lcd.XR           ~ (not used)
+    # connector_lcd.YU           ~ (not used)
+    # connector_lcd.XL           ~ (not used)
+
+

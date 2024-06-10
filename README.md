@@ -102,12 +102,12 @@ Predefined Pin Assignments (Parallel mode):
 | 18       | DB1           | GP1                 |
 | 17       | DB0           | GP0                 |
 | 16       | GND           | GND                 |
-| 15       | RESET         | GP27                |
+| 15       | RESET         | GP22                |
 | 14       | SPI SDO       | (not used)          |
 | 13       | SPI SDI/SDA   | (not used)          |
 | 12       | RDX           | 3.3V                |
 | 11       | WRX/SPI SCL   | GP26                |
-| 10       | DCX/RS(SPI-4) | GP22                |
+| 10       | DCX/RS(SPI-4) | GP27                |
 | 9        | CSX/SPI CS    | GND                 |
 | 8        | FMARK(TE)     | (not used)          |
 | 7        | VDDA          | 3.3V                |

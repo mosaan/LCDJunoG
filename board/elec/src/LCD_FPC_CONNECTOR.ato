@@ -1,0 +1,49 @@
+component LCD_FPC_CONNECTOR:
+    # component AFC07_minus_S40ECA_minus_00
+    footprint = "FPC-SMD_P0.50-40P_LCS-SJ-H2.0"
+    lcsc_id = "C262648"
+    mpn = "C262648"
+    # pins
+    signal IM2           ~ pin 1
+    signal IM1           ~ pin 2
+    signal IM0           ~ pin 3
+    signal GND           ~ pin 4
+    signal LED_K         ~ pin 5
+    signal LED_K         ~ pin 6
+    signal LED_K         ~ pin 7
+    signal LED_A         ~ pin 8
+    signal DB15          ~ pin 9
+    signal DB14          ~ pin 10
+    signal DB13          ~ pin 11
+    signal DB12          ~ pin 12
+    signal DB11          ~ pin 13
+    signal DB10          ~ pin 14
+    signal DB9           ~ pin 15
+    signal DB8           ~ pin 16
+    signal DB7           ~ pin 17
+    signal DB6           ~ pin 18
+    signal DB5           ~ pin 19
+    signal DB4           ~ pin 20
+    signal DB3           ~ pin 21
+    signal DB2           ~ pin 22
+    signal DB1           ~ pin 23
+    signal DB0           ~ pin 24
+    signal GND           ~ pin 25
+    signal RESET         ~ pin 26
+    signal SPI_SDO       ~ pin 27
+    signal SPI_SDI_SDA   ~ pin 28
+    signal RDX           ~ pin 29
+    signal WRX_SPI_SCL   ~ pin 30
+    signal DCX_RS_SPI    ~ pin 31
+    signal CSX_SPI_CS    ~ pin 32
+    signal FMARK_TE      ~ pin 33
+    signal VDDA          ~ pin 34
+    signal VDDI          ~ pin 35
+    signal GND           ~ pin 36
+    signal YD            ~ pin 37
+    signal XR            ~ pin 38
+    signal YU            ~ pin 39
+    signal XL            ~ pin 40
+    signal BASE_1        ~ pin 41
+    signal BASE_2        ~ pin 42
+
