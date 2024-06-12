@@ -46,6 +46,7 @@ BOM:
 - FFC/FPC connector
   - 1.0mm pitch 18-pin, bottom connection; for Juno G connection.
   - (Needed in parallel mode only) 0.5mm pitch 40-pin, top connection; for LCD connection.
+- 5 to 10 ohm reistor; for backlight LED on LCD.
 - (Optional) 0.1uF ceramic capacitor; for "LCD CONTRAST" knob stability.
 
 Predefined Pin Assignments (Parallel mode):
@@ -83,7 +84,7 @@ Predefined Pin Assignments (Parallel mode):
 | 36       | LED-K         | GND                 |
 | 35       | LED-K         | GND                 |
 | 34       | LED-K         | GND                 |
-| 33       | LED-A         | (external resistor) |
+| 33       | LED-A         | (3.3V via resistor) |
 | 32       | DB15          | (not used)          |
 | 31       | DB14          | (not used)          |
 | 30       | DB13          | (not used)          |
