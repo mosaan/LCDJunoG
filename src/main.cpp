@@ -9,7 +9,6 @@
  * Roland Juno G LCD Emulator
  */
 
-#ifndef JUNOG_DEBUGGER
 // Define in setup to disable all #warnings in library (can be put in User_Setup_Select.h)
 #define DISABLE_ALL_LIBRARY_WARNINGS
 #ifdef DEBUG_SERIAL
@@ -359,4 +358,3 @@ void loop()
   led_on = !led_on;
   DEBUG_PRINT("packet processed");
 }
-#endif

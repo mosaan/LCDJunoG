@@ -30,10 +30,9 @@ Without `MODE_BGCOLOR`, background color fixed to white.
 PlatformIO Build Environments
 =============================
 
-There are 2 (+1) environments defined:
+There are 2 environments defined:
 - `env:pico`: LCD runs in SPI mode.
 - `env:pico-parallel`: LCD runs in 8bit parallel mode.
-- `env:pico-debugger`: Generates Juno G LCD signals for debugging.
 
 Althogh predefined pin assignments are carefully selected to make PCB creation easier,
 you can choose other pins to match your needs.
