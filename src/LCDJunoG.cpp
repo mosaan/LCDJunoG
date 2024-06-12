@@ -173,7 +173,7 @@ void LCDJunoG::read_async(volatile uint32_t *buffer, void (*inputUpdatedCallback
         &cfg,
         NULL,    // dst
         &_pio->rxf[_sm],  // src. Direct read access to the RX FIFO for this state machine
-        12 * 123,
+        RAW_DATA_BUFFER_LENGTH,
         false
     );
 

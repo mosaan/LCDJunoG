@@ -30,10 +30,9 @@ Without `MODE_BGCOLOR`, background color fixed to white.
 PlatformIO Build Environments
 =============================
 
-There are 2 (+1) environments defined:
+There are 2 environments defined:
 - `env:pico`: LCD runs in SPI mode.
 - `env:pico-parallel`: LCD runs in 8bit parallel mode.
-- `env:pico-debugger`: Generates Juno G LCD signals for debugging.
 
 Althogh predefined pin assignments are carefully selected to make PCB creation easier,
 you can choose other pins to match your needs.
@@ -47,6 +46,7 @@ BOM:
 - FFC/FPC connector
   - 1.0mm pitch 18-pin, bottom connection; for Juno G connection.
   - (Needed in parallel mode only) 0.5mm pitch 40-pin, top connection; for LCD connection.
+- 5 to 10 ohm reistor; for backlight LED on LCD.
 - (Optional) 0.1uF ceramic capacitor; for "LCD CONTRAST" knob stability.
 
 Predefined Pin Assignments (Parallel mode):
@@ -84,7 +84,7 @@ Predefined Pin Assignments (Parallel mode):
 | 36       | LED-K         | GND                 |
 | 35       | LED-K         | GND                 |
 | 34       | LED-K         | GND                 |
-| 33       | LED-A         | (external resistor) |
+| 33       | LED-A         | (3.3V via resistor) |
 | 32       | DB15          | (not used)          |
 | 31       | DB14          | (not used)          |
 | 30       | DB13          | (not used)          |
