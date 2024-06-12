@@ -2031,9 +2031,9 @@
 			(layers "F.Cu" "F.Paste" "F.Mask")
 			(uuid "06aa628a-a9c0-4820-9636-b85554f52458")
 		)
-		(model "../../footprints/footprints.3dshapes/Pico-R3.step"
+		(model "../../footprints/footprints.3dshapes/Raspberry Pi Pico-R3.STEP"
 			(offset
-				(xyz 25.2 -10.5 0.5)
+				(xyz -0.3 0 0.5)
 			)
 			(scale
 				(xyz 1 1 1)
