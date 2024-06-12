@@ -1,5 +1,7 @@
 # Reference board design
 
+![reference board image](./board.png)
+
 This directory contains [atopile](https://atopile.io/) & [KiCad](https://www.kicad.org/) project files for the reference board design.
 
 If you just need PCB gerber files, see `elec/layout/default/production/board.zip`.
